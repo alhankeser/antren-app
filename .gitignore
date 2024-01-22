@@ -1,0 +1,6 @@
+venv
+.env
+.token
+.DS_Store
+activity_files/*/*
+!*.gitkeep
