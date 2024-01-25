@@ -7,6 +7,7 @@ ENV PYTHONDONTWRITEBYTECODE=1
 # Keeps Python from buffering stdout and stderr to avoid situations where
 # the application crashes without emitting any logs due to buffering.
 ENV PYTHONUNBUFFERED=1
+ENV HOST 0.0.0.0
 
 WORKDIR /code
 
@@ -39,7 +40,7 @@ ADD --chown=dockeruser --chmod=755 ./activity_files ./activity_files
 ADD --chown=dockeruser --chmod=755 ./.token ./.token
 
 # Expose the port that the application listens on.
-EXPOSE 8000
+EXPOSE 8080
 
 # Run the application.
 CMD python3 main.py

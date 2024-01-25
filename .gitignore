@@ -4,3 +4,4 @@ venv
 .DS_Store
 activity_files/*/*
 !*.gitkeep
+__pycache__
