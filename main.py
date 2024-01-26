@@ -1,38 +1,56 @@
 import os
 import logging
-import google.cloud.logging
-
-from api.garmin.garmin import authenticate, get_last_day_of_activities, get_activity_file, convert_activity_file
+from api.garmin import garmin
+from file_manager import file_manager
+from dotenv import load_dotenv
+load_dotenv()
 
 logging.basicConfig(level=logging.INFO)
-if os.environ.get("ENV", "dev") == "prod":
-    logging_client = google.cloud.logging.Client()
-    logging_client.setup_logging()
 
 def main():
     logging.info("Authenticating API")
-    api_client = authenticate()
-    activities = get_last_day_of_activities(api_client)
+    api_client = garmin.authenticate("garmin.com")
+    activities = garmin.get_last_day_of_activities(api_client)
     logging.info(f"Got {len(activities)} activities")
     for activity_data in activities:
         activity_id = activity_data["activityId"]
         activity_name = activity_data["activityName"]
         try:
-            original_file_path = get_activity_file(api_client, activity_id)
+            activity_raw_data = garmin.get_activity_raw_data(api_client, activity_id, format='tcx')
+            raw_file_path = file_manager.save_activity_raw_file(activity_id, activity_raw_data)
         except:
-            logging.warning(f'failed to get original: {activity_name} ({activity_id})' )
+            logging.warning(f'Failed to get original: {activity_name} ({activity_id})' )
             continue
         try:
-            convert_activity_file(activity_id, activity_name, original_file_path, format='parquet')
+            selectors = {
+                'heart_rate': 'HeartRateBpm > Value',
+                'watts': 'ns3:Watts',
+                'time': 'Time'
+            }
+            converted_file_path = file_manager.convert_activity_file(activity_id, 
+                                                                     activity_name, 
+                                                                     raw_file_path, 
+                                                                     selectors, 
+                                                                     format='parquet')
         except:
-            logging.warning(f'failed to convert: {activity_name} ({activity_id})' )
+            logging.warning(f'Failed to convert: {activity_name} ({activity_id})' )
             continue
         try:
-            os.remove(original_file_path)
+            os.remove(raw_file_path)
         except:
-            logging.warning(f'failed to delete: {activity_name} ({activity_id})')
+            logging.warning(f'Failed to delete: {activity_name} ({activity_id})')
             continue
-        logging.info(f'successfully saved: {activity_name} ({activity_id})' )
+        try:
+            file_manager.upload_to_cloud(converted_file_path, converted_file_path.split('/')[-1])
+        except:
+            logging.warning(f'Failed to upload to bucket: {activity_name} ({activity_id})')
+            continue
+        try:
+            os.remove(converted_file_path)
+        except:
+            logging.warning(f'Failed to delete: {activity_name} ({activity_id})')
+            continue
+        logging.info(f'Successfully saved: {activity_name} ({activity_id})' )
 
 if __name__ == '__main__':
     main()
