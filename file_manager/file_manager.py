@@ -30,7 +30,6 @@ def convert_activity_file(activity_id, activity_name, original_file_path, select
         seconds = len(time)
         if seconds == 0:
             return False
-        user_ids = np.repeat(0, seconds)
         activity_ids = np.repeat(activity_id, seconds)
         activity_names = np.repeat(activity_name, seconds)
         watts = np.array(soup.find_all(selectors['watts'])).flatten()
@@ -41,7 +40,6 @@ def convert_activity_file(activity_id, activity_name, original_file_path, select
             heart_rate = np.repeat(0, seconds)
         df = pd.DataFrame(
             {
-                'user_id': user_ids,
                 'activity_id': activity_ids,
                 'activity_name': activity_names,
                 'time': time,
@@ -50,10 +48,10 @@ def convert_activity_file(activity_id, activity_name, original_file_path, select
             }
         )
         df = df.astype({'activity_id': 'int32',
+                        'activity_name': 'string',
+                        'time': 'datetime64[s, UTC]',
                         'watts': 'int8', 
                         'heart_rate': 'int8',
-                        'time': 'datetime64[ns, UTC]',
-                        'activity_name': 'string'
                         })
         if format == 'csv':
             converted_file_path = f'{CONVERTED_FILES_PATH}/{activity_id}.csv'
