@@ -49,6 +49,12 @@ def convert_activity_file(activity_id, activity_name, original_file_path, select
                 'heart_rate': heart_rate
             }
         )
+        df = df.astype({'activity_id': 'int32',
+                        'watts': 'int8', 
+                        'heart_rate': 'int8',
+                        'time': 'datetime64[ns, UTC]',
+                        'activity_name': 'string'
+                        })
         if format == 'csv':
             converted_file_path = f'{CONVERTED_FILES_PATH}/{activity_id}.csv'
             df.to_csv(converted_file_path, index=False)
