@@ -37,6 +37,7 @@ def main():
                 activity_id, activity_name, raw_file_path, selectors, format="parquet"
             )
         except:
+            print(raw_file_path)
             logging.warning(f"Failed to convert: {activity_name} ({activity_id})")
             continue
         try:
