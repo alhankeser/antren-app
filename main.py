@@ -1,7 +1,7 @@
 import os
 import logging
-from api.garmin import garmin
-from file_manager import file_manager
+from lib.api.garmin import garmin
+from lib.file_manager import file_manager
 from dotenv import load_dotenv
 
 load_dotenv()
