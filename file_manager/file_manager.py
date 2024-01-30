@@ -27,24 +27,28 @@ def save_activity_raw_file(activity_id, activity_raw_data):
         activity_file.write(activity_raw_data)
     return file_path
 
+
 def convert_activity_file(
-    activity_id, activity_name, original_file_path, selectors, format="csv"
+    activity_id, original_file_path, selectors, format="csv"
 ):
     with open(f"{original_file_path}", "rb") as file:
         soup = BeautifulSoup(file, features="lxml-xml")
         time = np.array(soup.find_all(selectors["time"])).flatten()
-        seconds = len(time)
-        if seconds == 0:
+        time = np.array([pd.Timestamp(x) for x in time.tolist()])
+        unix_time_start = pd.Timestamp("1970-01-01").tz_localize("UTC")
+        increment = pd.Timedelta("1s")
+        time = np.array([(x - unix_time_start) // increment for x in time])
+        row_count = len(time)
+        if row_count == 0:
             return False
         watts = np.array(soup.find_all(selectors["watts"])).flatten()
-        if len(watts) < seconds:
-            watts = np.repeat(0, seconds)
+        if len(watts) < row_count:
+            watts = np.repeat(0, row_count)
         heart_rate = np.array(soup.select(selectors["heart_rate"])).flatten()
-        if len(heart_rate) < seconds:
-            heart_rate = np.repeat(0, seconds)
+        if len(heart_rate) < row_count:
+            heart_rate = np.repeat(0, row_count)
         activity_data = {
             "activity_id": activity_id,
-            "activity_name": activity_name,
             "data": {
                 "time": time.tolist(),
                 "watts": watts.tolist(),
@@ -53,7 +57,7 @@ def convert_activity_file(
         }
         df = pd.DataFrame([activity_data])
         df = df.astype(
-            {"activity_id": "int64", "activity_name": "string", "data": "string"}
+            {"activity_id": "int64", "data": "string"}
         )
         if format == "csv":
             converted_file_path = f"{CONVERTED_FILES_PATH}/{activity_id}.csv"
