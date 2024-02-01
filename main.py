@@ -7,6 +7,7 @@ from dotenv import load_dotenv
 load_dotenv()
 logging.basicConfig(level=logging.INFO)
 
+
 def main():
     logging.info("Authenticating API")
     api_client = garmin.authenticate("garmin.com")
@@ -21,13 +22,8 @@ def main():
         raw_file_path = file_manager.save_activity_raw_file(
             activity_id, activity_raw_data
         )
-        selectors = {
-            "heart_rate": "HeartRateBpm > Value",
-            "watts": "ns3:Watts",
-            "time": "Time",
-        }
         converted_file_path = file_manager.convert_activity_file(
-            activity_id, raw_file_path, selectors, format="parquet"
+            activity_id, raw_file_path, format="parquet"
         )
         os.remove(raw_file_path)
         file_manager.upload_to_cloud(
@@ -35,7 +31,6 @@ def main():
         )
         os.remove(converted_file_path)
         logging.info(f"Successfully saved: {activity_name} ({activity_id})")
-
 
 if __name__ == "__main__":
     main()

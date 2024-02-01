@@ -27,39 +27,58 @@ def save_activity_raw_file(activity_id, activity_raw_data):
         activity_file.write(activity_raw_data)
     return file_path
 
+def to_unix(timestamp):
+    unix_time_start = pd.Timestamp("1970-01-01").tz_localize("UTC")
+    increment = pd.Timedelta("1s")
+    timestamp = pd.Timestamp(timestamp)
+    return (timestamp - unix_time_start) // increment
+
 def convert_activity_file(
-    activity_id, original_file_path, selectors, format="csv"
+    activity_id, original_file_path, format="csv"
 ):
+    selectors = {
+            "heart_rate": "HeartRateBpm > Value",
+            "watts": "ns3:Watts",
+            "time": "Time",
+        }
     with open(f"{original_file_path}", "rb") as file:
         soup = BeautifulSoup(file, features="lxml-xml")
-        time = np.array(soup.find_all(selectors["time"])).flatten()
-        row_count = len(time)
-        if row_count == 0:
+        track_points = soup.find_all('Trackpoint')
+        if len(track_points) == 0:
             return False
-        time = np.array([pd.Timestamp(x) for x in time.tolist()])
-        unix_time_start = pd.Timestamp("1970-01-01").tz_localize("UTC")
-        increment = pd.Timedelta("1s")
-        time = np.array([(x - unix_time_start) // increment for x in time])
-        watts = np.array(soup.find_all(selectors["watts"])).flatten()
-        if len(watts) < row_count:
-            watts = np.repeat(0, row_count)
-        watts = np.array([int(x) for x in watts.tolist()])
-        heart_rate = np.array(soup.select(selectors["heart_rate"])).flatten()
-        if len(heart_rate) < row_count:
-            heart_rate = np.repeat(0, row_count)
-        heart_rate = np.array([int(x) for x in heart_rate.tolist()])
+        data = []
+        for track_point in track_points:
+            time_point = track_point.find(selectors['time']).text
+            try:
+                heart_rate_point = track_point.select(selectors['heart_rate'])[0].text
+            except:
+                heart_rate_point = 0
+            try:
+                watts_point = track_point.find(selectors['watts']).text
+            except:
+                watts_point = 0
+            
+            data.append({
+                'time': to_unix(time_point),
+                'heart_rate': heart_rate_point,
+                'watts': watts_point
+            })
+        
+        data_df = pd.DataFrame(data)
+        data_dict = data_df.to_dict(orient='list')
+
         activity_data = {
             "activity_id": activity_id,
-            "start_time": time[0],
-            "data": {
-                "time": time.tolist(),
-                "watts": watts.tolist(),
-                "heart_rate": heart_rate.tolist(),
-            },
+            "start_time": data_df.iloc[0]['time'],
+            "data": data_dict
         }
         df = pd.DataFrame([activity_data])
         df = df.astype(
-            {"activity_id": "int64", "data": "string"}
+            {
+                "activity_id": "int64", 
+                "start_time": "int64", 
+                "data": "string"
+             }
         )
         if format == "csv":
             converted_file_path = f"{CONVERTED_FILES_PATH}/{activity_id}.csv"
