@@ -60,8 +60,8 @@ def convert_activity_file(
             
             data.append({
                 'time': to_unix(time_point),
-                'heart_rate': heart_rate_point,
-                'watts': watts_point
+                'heart_rate': int(heart_rate_point),
+                'watts': int(watts_point)
             })
         
         data_df = pd.DataFrame(data)
