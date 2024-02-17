@@ -37,8 +37,8 @@ USER dockeruser
 
 # Copy the source code into the container.
 COPY . .
-ADD --chown=dockeruser --chmod=755 ./activity_files ./activity_files
-ADD --chown=dockeruser --chmod=755 ./.token ./.token
+ADD --chown=dockeruser --chmod=700 ./activity_files ./activity_files
+ADD --chown=dockeruser --chmod=700 ./.token ./.token
 
 # Expose the port that the application listens on.
 EXPOSE 8080
