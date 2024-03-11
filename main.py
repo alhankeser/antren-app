@@ -1,5 +1,6 @@
 import os
 import logging
+import time
 from lib.api.garmin import garmin
 from lib.file_manager import file_manager
 from dotenv import load_dotenv

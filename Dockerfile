@@ -32,11 +32,16 @@ RUN --mount=type=cache,target=/root/.cache/pip \
     --mount=type=bind,source=requirements.txt,target=requirements.txt \
     python -m pip install -r requirements.txt
 
+# Copy the source code into the container.
+COPY . .
+
+# Setup zig executable
+RUN python build_zig.py
+
 # Switch to the non-privileged user to run the application.
 USER dockeruser
 
-# Copy the source code into the container.
-COPY . .
+# Give dockeruser a few rights
 ADD --chown=dockeruser --chmod=700 ./activity_files ./activity_files
 ADD --chown=dockeruser --chmod=700 ./.token ./.token
 
